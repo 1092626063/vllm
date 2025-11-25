@@ -55,10 +55,14 @@ class SharedHead(nn.Module):
     ) -> None:
         super().__init__()
         self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        if config.max_position_embeddings == 131072:
+            prefix = maybe_prefix(prefix, "head")
+        else:
+            prefix = "lm_head"
         self.head = ParallelLMHead(config.vocab_size,
                                    config.hidden_size,
                                    quant_config=quant_config,
-                                   prefix=maybe_prefix(prefix, "head"))
+                                   prefix=prefix)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         return self.norm(hidden_states)
@@ -80,7 +84,7 @@ class Glm4MoeMultiTokenPredictorLayer(nn.Module):
                                  config.hidden_size,
                                  bias=False)
         self.shared_head = SharedHead(config=config,
-                                      prefix=prefix,
+                                      prefix=maybe_prefix(prefix, "shared_head"),
                                       quant_config=quant_config)
         self.mtp_block = Glm4MoeDecoderLayer(config=config,
                                              cache_config=cache_config,
