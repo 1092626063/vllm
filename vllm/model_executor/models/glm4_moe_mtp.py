@@ -215,6 +215,9 @@ class Glm4MoeMTP(nn.Module, SupportsPP):
         params_dict = dict(self.named_parameters())
         loaded_params: set[str] = set()
         for name, loaded_weight in weights:
+            if "e_score_correction_bias" in name:
+                loaded_weight = loaded_weight - torch.min(loaded_weight)
+                loaded_weight = loaded_weight.to(self.config.dtype)
             spec_layer = get_spec_layer_idx_from_weight_name(self.config, name)
             if spec_layer is None:
                 continue
